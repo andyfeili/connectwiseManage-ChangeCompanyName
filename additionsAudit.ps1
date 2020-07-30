@@ -32,8 +32,9 @@ Import-Module .\password.ps1
 Start-CWMConnection
 
 #get relevant agreements
-$agree = Get-CWMAgreement -Condition 'type/name != "Break Fix" and type/name != "TBS Install" and type/name != "3cx AMC + Base" and type/name != "zz-TBS installs" and company/identifier != "XYZTestCompany" and noEndingDateFlag = TRUE and name != "Monthly - Veeam O365" and name != "Monthly - Rack Space Rental" and name != "Custom Quote" and company/identifier != "CloudConnectPtyLtd"' -all 
+$agree = Get-CWMAgreement -all -Condition 'type/name != "Break Fix" and type/name != "zz-TBS installs" and type/name != "TBS Install"' #and type/name != "3cx AMC + Base" and type/name != "zz-TBS installs" and company/identifier != "XYZTestCompany" and noEndingDateFlag = TRUE and name != "Monthly - Veeam O365" and name != "Monthly - Rack Space Rental" and name != "Custom Quote" and company/identifier != "CloudConnectPtyLtd"'  
 
+$agree | Export-Csv -Path .\allAgree.csv
 #company dictionary
 $d = @{}
 
@@ -134,7 +135,7 @@ $output.GetEnumerator() | sort value -Descending | ForEach-Object{
 
 
 
-
+###compare with hyperv report server03
 ## .\Get-HyperVReport.ps1 -Cluster P1-CL01
 
 
