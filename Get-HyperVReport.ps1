@@ -2183,6 +2183,12 @@ ForEach ($VMHostItem in $VMHosts) {
 					
 					$outStringDisk = "SSD: " + $vmDiskMaxSize
 					
+					$sss = $outStringDisk |out-string
+					
+					$ssss = $sss.split(" ")
+					
+					$outStringDisk = $ssss[0]+" "+ $ssss[1]
+					
 					add-content -Value $outStringDisk -path .\myoutput.txt
 					
                     $vmDiskFileSize = sConvert-Size -DiskVolumeSpace $vmDisk.FileSize -DiskVolumeSpaceUnit byte
@@ -2278,6 +2284,12 @@ ForEach ($VMHostItem in $VMHosts) {
 							#disk size here
 							
 							$outStringDisk = "SSD: " + $vmDiskMaxSize
+							
+							$sss = $outStringDisk |out-string
+					
+							$ssss = $sss.split(" ")
+					
+							$outStringDisk = $ssss[0]+" "+ $ssss[1]
 					
 							add-content -Value $outStringDisk -path .\myoutput.txt
 							
@@ -2421,6 +2433,12 @@ ForEach ($VMHostItem in $VMHosts) {
 				
 				$outStringRAM = "RAM: " + $outVmMemMax
 				
+				$sss = $outStringRAM |out-string
+					
+				$ssss = $sss.split(" ")
+					
+				$outStringRAM = $ssss[0]+ " "+$ssss[1]
+				
 				add-content -Value $outStringRAM -path .\myoutput.txt
             }
             else
@@ -2433,6 +2451,12 @@ ForEach ($VMHostItem in $VMHosts) {
                 <td rowspan=""$($rowSpanCount)"" colspan=""4""><p style=""line-height:1.1""><abbr title=""Static Memory (Startup)"">$($outVmMemStartup[0])<br><span style=""font-size:10px"">$($outVmMemStartup[1])</span></abbr></p></td>"
 				
 				$outStringRAM = "RAM: " + $outVmMemStartup
+				
+				$sss = $outStringRAM |out-string
+					
+				$ssss = $sss.split(" ")
+					
+				$outStringRAM = $ssss[0]+ " "+$ssss[1]
 				
 				add-content -Value $outStringRAM -path .\myoutput.txt
             }
