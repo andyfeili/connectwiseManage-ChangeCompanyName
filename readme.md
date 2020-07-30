@@ -14,9 +14,9 @@ open myoutput.txt to get results
 
 ### Connectwise Manage output Agreement Additions for CPU, RAM, SSD 
 
-enter your creds for Connectwise Manage in password.ps1
+first enter your creds for Connectwise Manage in password.ps1
 
-then 
+next
 
 ```
 .\additionsAudit.ps1
