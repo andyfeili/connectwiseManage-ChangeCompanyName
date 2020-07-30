@@ -1639,6 +1639,9 @@ ForEach ($VMHostItem in $VMHosts) {
     if ($VMs)
     {
         $cntVM = $cntVM + 1
+		
+		##mydictionary
+		$CustomerDic = @{}
         
         foreach ($VM in $VMs)
         {
@@ -2168,6 +2171,9 @@ ForEach ($VMHostItem in $VMHosts) {
             }
             else
             {    
+				#mydiskdicionary
+				$totalDisk = 0
+			
                 foreach($vmDisk in $vmDisks)
                 {
                     [array]$vmDiskData = $null
@@ -2201,7 +2207,9 @@ ForEach ($VMHostItem in $VMHosts) {
 					
 					$outStringDisk = $ssss[0]+" "+ $ssss[1]
 					
-					add-content -Value $outStringDisk -path .\myoutput.txt
+					$totalDisk = $totalDisk + [int]$ssss[1]
+					
+					#add-content -Value $outStringDisk -path .\myoutput.txt
 					
                     $vmDiskFileSize = sConvert-Size -DiskVolumeSpace $vmDisk.FileSize -DiskVolumeSpaceUnit byte
 
@@ -2314,7 +2322,8 @@ ForEach ($VMHostItem in $VMHosts) {
 					
 							$outStringDisk = $ssss[0]+" "+ $ssss[1]
 					
-							add-content -Value $outStringDisk -path .\myoutput.txt
+							$totalDisk = $totalDisk + [int]$ssss[1]
+							#add-content -Value $outStringDisk -path .\myoutput.txt
 							
 							
                             # For Active VHD file size
@@ -2419,6 +2428,11 @@ ForEach ($VMHostItem in $VMHosts) {
                         $rowSpanCount = $rowSpanCount + 1
                     }
                 }
+				
+				##total disk output
+				$totaldiskoutstring = "SSD: "+$totalDisk
+				
+				add-content -Value $totaldiskoutstring -path .\myoutput.txt
             }
 
             #If single VHD, rowSpanCount equal to 0 
