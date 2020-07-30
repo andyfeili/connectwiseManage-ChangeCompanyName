@@ -2187,6 +2187,18 @@ ForEach ($VMHostItem in $VMHosts) {
 					
 					$ssss = $sss.split(" ")
 					
+					if($ssss[2] -like "*MB*")
+					{
+						$ssss[1] = [int]$ssss[1]/1000
+					}
+					
+					if($ssss[2] -like "*TB*")
+					{
+						$ssss[1] = [int]$ssss[1]*1000
+					}
+					
+					#$ssss[1] = [int]$ssss[1]*1000
+					
 					$outStringDisk = $ssss[0]+" "+ $ssss[1]
 					
 					add-content -Value $outStringDisk -path .\myoutput.txt
@@ -2288,6 +2300,17 @@ ForEach ($VMHostItem in $VMHosts) {
 							$sss = $outStringDisk |out-string
 					
 							$ssss = $sss.split(" ")
+							
+								if($ssss[2] -like "*MB*")
+								{
+									$ssss[1] = [int]$ssss[1]/1000
+								}
+								
+								if($ssss[2] -like "*TB*")
+								{
+									$ssss[1] = [int]$ssss[1]*1000
+								}
+							#$ssss[1] = [int]$ssss[1]*1000
 					
 							$outStringDisk = $ssss[0]+" "+ $ssss[1]
 					
@@ -2436,6 +2459,18 @@ ForEach ($VMHostItem in $VMHosts) {
 				$sss = $outStringRAM |out-string
 					
 				$ssss = $sss.split(" ")
+				
+					if($ssss[2] -like "*MB*")
+					{
+						$ssss[1] = [int]$ssss[1]/1000
+					}
+					
+					if($ssss[2] -like "*TB*")
+					{
+						$ssss[1] = [int]$ssss[1]*1000
+					}
+					
+					#$ssss[1] = [int]$ssss[1]*1000
 					
 				$outStringRAM = $ssss[0]+ " "+$ssss[1]
 				
@@ -2455,6 +2490,18 @@ ForEach ($VMHostItem in $VMHosts) {
 				$sss = $outStringRAM |out-string
 					
 				$ssss = $sss.split(" ")
+				
+					if($ssss[2] -like "*MB*")
+					{
+						$ssss[1] = [int]$ssss[1]/1000
+					}
+					
+					if($ssss[2] -like "*TB*")
+					{
+						$ssss[1] = [int]$ssss[1]*1000
+					}
+					
+					#$ssss[1] = [int]$ssss[1]*1000
 					
 				$outStringRAM = $ssss[0]+ " "+$ssss[1]
 				
