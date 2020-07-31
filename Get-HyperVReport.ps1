@@ -1345,187 +1345,6 @@ $outVMHostTable = $null
 $ovUpNode, $ovTotalLP, $ovTotalMemory, $ovUsedMemory = 0
 $ovTotalVProc, $ovTotalVmMemory, $ovUsedVmMemory, $ovUsedVmVHD, $ovTotalVmVHD = 0
 
-foreach ($vmHostItem in $vmHosts) {
-
-    $highL = $false
-    $chargerVMHostTable = $null
-    $vmHostData = $null
-    $vmHostTotalVProc = 0
-    $vmHostVpLpRatio = 0
-    $vmHostRunningClusVmCount= 0
-    $vmHostGet = Get-VMHost -ComputerName $vmHostItem
-	$vmHostGetIP = Get-VMHost 
-    $vmHostVMs = Get-VM -ComputerName $vmHostItem
-    $vmHostVmCount = $vmHostVMs.Count + ($offlineVmConfigData | where{$_.OwnerNode -eq "$vmHostItem"}).Count
-    $vmHostRunningVmCount = ($vmHostVMs | where{$_.State -eq "Running"}).Count
-    $vmHostRunningClusVmCount = ($vmHostVMs | where{($_.IsClustered -eq $true) -and ($_.State -eq "Running")}).Count
-    $vmHostRunningNonClusVmCount = $vmHostRunningVmCount - $vmHostRunningClusVmCount 
-    $vmHostTotalVProc = (($vmHostVMs | where{(($_.State -eq "Running") -or ($_.State -eq "Paused"))}).ProcessorCount | Measure-Object -Sum).Sum
-    $vmHostClusVProc = (($vmHostVMs | where{(($_.State -eq "Running") -and ($_.IsClustered -eq $true)) -or (($_.State -eq "Paused") -and ($_.IsClustered -eq $true))}).ProcessorCount | Measure-Object -Sum).Sum
-    $vmHostWmiData = Get-WmiObject -ComputerName $vmHostItem -Class Win32_OperatingSystem
-
-    # For Cluster Overview
-    $ovTotalVProc = $ovTotalVProc + $vmHostClusVProc
-
-    # State
-    if ($Cluster)
-    {
-        $vmHostState = (Get-ClusterNode -Cluster $ClusterName -Name $vmHostItem).State
-    }
-    else
-    {
-        $vmHostState = "Up"  
-    }
-
-    # State Colors
-    if ($vmHostState -eq "Up")
-    {
-        $outVmHostState = "Up",$stateBgColors[1],$stateWordColors[1]
-    }
-    elseif ($vmHostState -eq "Down")
-    {
-        $outVmHostState = "Down",$stateBgColors[3],$stateWordColors[3]
-        $highL = $true
-    }
-    elseif ($vmHostState -eq "Paused")
-    {
-        $outVmHostState = "Paused",$stateBgColors[2],$stateWordColors[2]
-    }
-    elseif ($vmHostState -eq "Joining")
-    {
-        $outVmHostState = "Joining",$stateBgColors[4],$stateWordColors[4]
-    }
-    else
-    {
-        $outVmHostState = "Unknown",$stateBgColors[5],$stateWordColors[5]
-        $highL = $true
-    }
-    
-    # Clear
-    $TotalUsedMemory = $null
-    $TotalFreeMemory = $null
-    $TotalVisibleMemory = $null
-    $vmHostUptime = $null
-    $TotalFreeMemoryPercentage = $null
-     
-    # Memory Capacty
-    $TotalUsedMemory = sConvert-Size -DiskVolumeSpace ($vmHostWmiData.TotalVisibleMemorySize - $vmHostWmiData.FreePhysicalMemory) -DiskVolumeSpaceUnit kb
-    $TotalFreeMemory = sConvert-Size -DiskVolumeSpace $vmHostWmiData.FreePhysicalMemory -DiskVolumeSpaceUnit kb
-    $TotalVisibleMemory = sConvert-Size -DiskVolumeSpace $vmHostWmiData.TotalVisibleMemorySize -DiskVolumeSpaceUnit kb
-    $TotalFreeMemoryPercentage = [math]::round(($vmHostWmiData.FreePhysicalMemory/$vmHostWmiData.TotalVisibleMemorySize)*100)
-
-    # Free Memory Percentage Colors
-    # 0 - $totalFreeMemoryBgColor
-    # 1 - $TotalFreeMemoryPercentageBgColor
-    # 2 - $TotalFreeMemoryPercentageWordColor
-    if (($TotalFreeMemoryPercentage -le 10) -and ($TotalFreeMemoryPercentage -gt 5))
-    {
-        $outVmHostFreeMemoryState = $stateBgColors[4],$stateBgColors[4],$stateWordColors[4]
-        $highL = $true
-    }
-    elseif ($TotalFreeMemoryPercentage -le 5)
-    {
-        $outVmHostFreeMemoryState = $stateBgColors[3],$stateBgColors[3],$stateWordColors[3]
-        $highL = $true
-    }
-    else
-    {
-        $outVmHostFreeMemoryState = $stateBgColors[0],$stateBgColors[0],"#BDBDBD"
-    }
-
-    # Hostname
-    $outVMHostName = ($vmHostGet.ComputerName).ToUpper()
-     
-    # Uptime
-    $vmHostUptime = ([Management.ManagementDateTimeConverter]::ToDateTime($vmHostWmiData.LocalDateTime)) - ([Management.ManagementDateTimeConverter]::ToDateTime($vmHostWmiData.LastBootUpTime))
-        if($vmHostUptime.Days -eq "0"){$vmHostUptimeDays = ""}
-        else{$vmHostUptimeDays = ($vmHostUptime.Days).ToString() + " <span style=""font-size:10px;color:#BDBDBD"">Days</span> <br>"}
-    $vmHostUptime = ($vmHostUptime.Hours).ToString() + ":" + ($vmHostUptime.Minutes).ToString() + ":" + ($vmHostUptime.Seconds).ToString()
-
-    # OS Version
-    $vmHostOsVersion = ($vmHostWmiData.Caption).Replace("Microsoft ","")
-
-    # Processor socket and HT state
-    $processorData = sGet-Wmi -ComputerName $vmHostItem -Namespace root\CIMv2 -Class Win32_Processor -Property DeviceID,NumberOfCores,NumberOfLogicalProcessors
-    if ($processorData[1] -eq 1)
-    {
-        $socketCount = ($processorData[0] | ForEach-Object {$_.DeviceID} | select-object -unique).Count
-        $coreCount = ($processorData[0].NumberOfCores | Measure-Object -Sum).Sum
-        $logicalProcCount = ($processorData[0].NumberOfLogicalProcessors | Measure-Object -Sum).Sum
-
-        if ($logicalProcCount -gt $coreCount)
-        {
-            $htState = "Active"
-        }
-        Else
-        {
-            $htState = "Inactive"
-        }
-    }
-    else
-    {
-        $socketCount = "-"
-        $htState = "Unknown"
-    }
-
-    $vmHostLpCount = $vmHostGet.LogicalProcessorCount
-    if (!$vmHostLpCount)
-    {
-        $vmHostLpCount = $logicalProcCount
-    }
-
-    # For Cluster Overview
-    if(($Cluster) -and ($vmHostState -eq "Up"))
-    {
-        $ovUpNode = $ovUpNode + 1
-        $ovTotalLP = $ovTotalLP + $vmHostLpCount
-        $ovUsedMemory = $ovUsedMemory + ($vmHostWmiData.TotalVisibleMemorySize - $vmHostWmiData.FreePhysicalMemory)
-        $ovTotalMemory = $ovTotalMemory + $vmHostWmiData.TotalVisibleMemorySize
-    }
-
-    # LP:VP Ratio
-    $vmHostVpLpRatio = ("{0:N2}" -f ($vmHostTotalVProc / $vmHostLpCount)).Replace(".00","")
-
-    # Computer and Processor Manufacturer/Model Info
-    $outVmHostComputerInfo = gwmi -ComputerName $vmHostItem -Class Win32_ComputerSystem -Property Manufacturer,Model
-    $outVmHostProcModel = (gwmi -ComputerName $vmHostItem -Class Win32_Processor).Name
-    if($outVmHostProcModel.count -gt 1)
-    {
-        $outVmHostProcModel = $outVmHostProcModel[0]
-    }
-    $outVmHostProcModel = $outVmHostProcModel.Replace("           "," ")
-
-    # Data Line
-    $chargerVMHostTable ="
-            <tr><!--Data Line-->
-                <td><p style=""text-align:left;""><abbr title=""Manufacturer: $($outVmHostComputerInfo.Manufacturer)&#10;Model: $($outVmHostComputerInfo.Model)"">$($outVMHostName) <span style=""font-size:10px;color:orange"">*</span></abbr><br><span style=""font-size:10px;color:#BDBDBD;text-align:left"">$($vmHostOsVersion)</span></p></td>
-                <td bgcolor=""$($outVmHostState[1])""><p style=""color:$($outVmHostState[2])"">$($outVmHostState[0])</p></td>
-                <td><p>$($vmHostUptimeDays)$($vmHostUptime)</p></td>
-                <td><p>$($vmHostGet.FullyQualifiedDomainName)</p></td>
-                <td><p style=""line-height:1.2"">$($vmHostVmCount) <br><span style=""font-size:10px;color:#BDBDBD""><abbr title=""Non-Clustered: $($vmHostRunningNonClusVmCount) | Clustered: $($vmHostRunningClusVmCount)"">$($vmHostRunningVmCount) Running <span style=""font-size:10px;color:orange"">*</span></abbr></span></p></td>
-                <td><p style=""line-height:1.2"">$($vmHostTotalVProc)<br><abbr title=""Virtual Processors per Logical Processor ratio (VP:LP)""><span style=""font-size:10px;color:#BDBDBD"">$($vmHostVpLpRatio):1 <span style=""font-size:10px;color:orange"">*</span></span></abbr></p></td>
-                <td><p style=""line-height:1.2"">$($vmHostLpCount) <br><span style=""font-size:10px;color:#BDBDBD""><abbr title=""Hyper-Threading: $($htState)&#10;Model: $($outVmHostProcModel)"">$($socketCount) Socket <span style=""font-size:10px;color:orange"">*</span></abbr></span></p></td>
-                <td><p style=""line-height:1.2"">$(($TotalUsedMemory)[0])<br><span style=""font-size:10px"">$(($TotalUsedMemory)[1])</span></p></td>
-                <td bgcolor=""$($outVmHostFreeMemoryState[0])""><p style=""line-height:1.2"">$(($TotalFreeMemory)[0])<br><span style=""font-size:10px"">$(($TotalFreeMemory)[1])</span></p></td>
-                <td><p style=""line-height:1.2"">$(($TotalVisibleMemory)[0]) <span style=""font-size:10px"">$(($TotalVisibleMemory)[1])</span> <br><span style=""font-size:10px;background-color:$($outVmHostFreeMemoryState[1]);color:$($outVmHostFreeMemoryState[2])"">&nbsp;~%$($TotalFreeMemoryPercentage) free&nbsp;</span></p></td>
-            </tr>"
-
-    # Add to HTML Table
-    if ($HighlightsOnly -eq $false)
-    {
-        # VMHost Output
-        $outVMHostTable += $chargerVMHostTable
-    }
-    elseif (($HighlightsOnly -eq $true) -and ($highL -eq $true))
-    {
-        # VMHost Output
-        $outVMHostTable += $chargerVMHostTable
-    }
-    else
-    {
-        # Blank
-    }
-}
 
 # Add offline or unsupported standalone hosts
 if ($invalidVmHost)
@@ -1622,6 +1441,9 @@ $ovPausedVm = 0
 # Active VHD Array
 $activeVhds = @()
 
+##mydictionary
+$CustomerDic = @{}
+
 ForEach ($VMHostItem in $VMHosts) {
     
     $getVMerr = $null
@@ -1641,7 +1463,7 @@ ForEach ($VMHostItem in $VMHosts) {
         $cntVM = $cntVM + 1
 		
 		##mydictionary
-		$CustomerDic = @{}
+		#$CustomerDic = @{}
         
         foreach ($VM in $VMs)
         {
@@ -1801,12 +1623,26 @@ ForEach ($VMHostItem in $VMHosts) {
             # Owner Host
             $outVmHost = ($VM.ComputerName).ToUpper()
 			
+			if($CustomerDic[$VM.name.split("-")[0]] -eq $null){
+				$CustomerDic[$VM.name.split("-")[0]] = @{}
+			}
+			
 			add-content -Value $VM.name -path .\myoutput.txt
 
             # vCPU
             $outVmCPU = $VM.ProcessorCount
 			
 			$outStringCPU = "CPU: " + $outVmCPU
+			
+			if($CustomerDic[$VM.name.split("-")[0]]["CPU"] -eq $null){
+				$CustomerDic[$VM.name.split("-")[0]]["CPU"] = [int]$outVmCPU
+			}
+			else
+			{
+				$temp = [int]$CustomerDic[$VM.name.split("-")[0]]["CPU"] + [int]$outVmCPU
+				[int]$CustomerDic[$VM.name.split("-")[0]]["CPU"] = $temp
+				
+			}
 			
 			add-content -Value $outStringCPU -path .\myoutput.txt
         
@@ -2433,6 +2269,16 @@ ForEach ($VMHostItem in $VMHosts) {
 				$totaldiskoutstring = "SSD: "+$totalDisk
 				
 				add-content -Value $totaldiskoutstring -path .\myoutput.txt
+				
+				if($CustomerDic[$VM.name.split("-")[0]]["SSD"] -eq $null){
+					$CustomerDic[$VM.name.split("-")[0]]["SSD"] = [int]$totalDisk
+				}
+				else
+				{
+					$temp = [int]$CustomerDic[$VM.name.split("-")[0]]["SSD"] + [int]$totalDisk
+					[int]$CustomerDic[$VM.name.split("-")[0]]["SSD"] = $temp
+					
+				}
             }
 
             #If single VHD, rowSpanCount equal to 0 
@@ -2488,7 +2334,18 @@ ForEach ($VMHostItem in $VMHosts) {
 					
 				$outStringRAM = $ssss[0]+ " "+$ssss[1]
 				
+				
 				add-content -Value $outStringRAM -path .\myoutput.txt
+				
+				if($CustomerDic[$VM.name.split("-")[0]]["RAM"] -eq $null){
+					$CustomerDic[$VM.name.split("-")[0]]["RAM"] = [int]$ssss[1]
+				}
+				else
+				{
+					$temp = [int]$CustomerDic[$VM.name.split("-")[0]]["RAM"] + [int]$ssss[1]
+					[int]$CustomerDic[$VM.name.split("-")[0]]["RAM"] = $temp
+					
+				}
             }
             else
             {
@@ -2520,6 +2377,16 @@ ForEach ($VMHostItem in $VMHosts) {
 				$outStringRAM = $ssss[0]+ " "+$ssss[1]
 				
 				add-content -Value $outStringRAM -path .\myoutput.txt
+				
+				if($CustomerDic[$VM.name.split("-")[0]]["RAM"] -eq $null){
+					$CustomerDic[$VM.name.split("-")[0]]["RAM"] = [int]$ssss[1]
+				}
+				else
+				{
+					$temp = [int]$CustomerDic[$VM.name.split("-")[0]]["RAM"] + [int]$ssss[1]
+					[int]$CustomerDic[$VM.name.split("-")[0]]["RAM"] = $temp
+					
+				}
             }
 
             # Data Line
@@ -2555,6 +2422,8 @@ ForEach ($VMHostItem in $VMHosts) {
                 # Blank
             }
         }
+		
+		#write-output $CustomerDic
     }
     # Error
     elseif ($getVMerr)
