@@ -12,6 +12,14 @@ on Hyper-V server (tested on server02 and server03)
 
 open myoutput.txt to get results
 
+to sum up values per client
+
+```
+python sum.py
+```
+
+results returned to console
+
 ### Connectwise Manage output Agreement Additions for CPU, RAM, SSD 
 
 first enter your creds for Connectwise Manage in password.ps1
