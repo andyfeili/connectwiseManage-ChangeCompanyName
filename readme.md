@@ -1,26 +1,8 @@
-# Hyper-V Auditing
+# Connectwise Manage - Change all Company Names to Title Case
 
 ## Usage
 
-### Hyper-V output CPU, RAM, SSD usage
-
-on Hyper-V server (tested on server02 and server03)
-
-```
-.\Get-HyperVReport.ps1 -Cluster P1-CL01
-```
-
-open myoutput.txt to get results
-
-to sum up values per client
-
-```
-python sum.py
-```
-
-results returned to console
-
-### Connectwise Manage output Agreement Additions for CPU, RAM, SSD 
+### Connectwise Manage 
 
 first enter your creds for Connectwise Manage in password.ps1
 
@@ -37,7 +19,6 @@ $password = "XXXXXXXXXXXX" #password to login to Manage
 next
 
 ```
-.\additionsAudit.ps1
+.\changeCompanyName.ps1
 ```
 
-results returned to console
